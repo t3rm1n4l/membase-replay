@@ -17,7 +17,6 @@ import (
 
 var wait sync.WaitGroup
 var connections map[string]chan string
-var count int
 
 func genRequest(cmd string) string {
 	params := strings.Split(cmd, " ")
@@ -92,19 +91,23 @@ func handleConnection(server string, ch chan string) {
 func main() {
 	var capfile *string = flag.String("c", "", "Capture data file")
 	var server *string = flag.String("h", "127.0.0.1:11211", "Server address")
+	var scale *float64 = flag.Float64("s", 1, "Scale factor (Eg. 0.5, 2)")
 	connections = make(map[string]chan string)
-	count = 0
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage %s: -c data.cap -h server:port\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage %s: -c data.cap -h server:port -s scale\n", os.Args[0])
 		os.Exit(1)
 	}
 
 	flag.Parse()
 
+	if *capfile == "" {
+		flag.Usage()
+	}
+
 	f, err := os.Open(*capfile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to open file:%s (%s)\n", *capfile, err)
+		fmt.Fprintf(os.Stderr, "Unable to open file, %s\n", *capfile)
 		os.Exit(1)
 	}
 	defer f.Close()
@@ -127,7 +130,8 @@ func main() {
 			actualStartTime = recordTime
 		}
 
-		toSleep := recordTime.Sub(actualStartTime) - time.Now().Sub(replayStartTime)
+		interval := float64(recordTime.Sub(actualStartTime))/(*scale)
+		toSleep := time.Duration(interval) - time.Now().Sub(replayStartTime)
 		time.Sleep(toSleep)
 		ch := connections[record[1]]
 		if ch == nil {
