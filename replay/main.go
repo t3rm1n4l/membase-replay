@@ -38,13 +38,13 @@ func genRequest(cmd string) string {
 		flag, _ = strconv.Atoi(params[2])
 		exp, _ = strconv.Atoi(params[3])
 		length, _ = strconv.Atoi(params[4])
-		ret = fmt.Sprintf("set %s %d %d %d 0001:\n%0*s\n", key, flag, exp, length, length)
+		ret = fmt.Sprintf("set %s %d %d %d 0001:\r\n%s\r\n", key, flag, exp, length, strings.Repeat("x", length))
 
 	case "get":
 		fallthrough
 	case "getl":
 		key = params[1]
-		ret = fmt.Sprintf("get %s\n", key)
+		ret = fmt.Sprintf("get %s\r\n", key)
 
 	case "delete":
 		key = params[1]
@@ -119,7 +119,7 @@ func main() {
 			break
 		}
 
-		v, _ := strconv.Atoi(record[0])
+		v, _ := strconv.ParseUint(record[0],10,64)
 		recordTime := time.Unix(0, int64(v))
 
 		if !firstEntry {
@@ -131,7 +131,7 @@ func main() {
 		time.Sleep(toSleep)
 		ch := connections[record[1]]
 		if ch == nil {
-			ch = make(chan string, 1)
+			ch = make(chan string)
 			connections[record[1]] = ch
 			wait.Add(1)
 			go handleConnection(*server, ch)
