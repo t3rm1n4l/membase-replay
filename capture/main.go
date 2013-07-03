@@ -87,7 +87,11 @@ func main() {
 	stream := bufio.NewWriter(f)
 	defer stream.Flush()
 
-	for pkt := h.Next(); pkt != nil; pkt = h.Next() {
+	for pkt := h.Next(); ; pkt = h.Next() {
+		if pkt == nil {
+			continue
+		}
+
 		pkt.Decode()
 		if len(pkt.Headers) != 0 {
 			for _, msg := range strings.Split(string(pkt.Payload), "\r\n") {
